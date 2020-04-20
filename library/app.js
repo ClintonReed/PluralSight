@@ -3,13 +3,36 @@ const chalk = require('chalk');
 const debug = require('debug')('app');
 const morgan = require('morgan');
 const path = require('path');
+const sql = require('mssql');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+//MSSQL Connection
+
+const config = {
+  user: 'library',
+  password: 'P@ssw0rd',
+  server: 'pslibrarycer.database.windows.net', // You can use 'localhost\\instance' to connect to named instance
+  database: 'PSLibrary',
+
+  options: {
+    encrypt: true
+  }
+};
+
+sql.connect(config).catch((err) => debug(err));
 
 // Express will use morgan returns GET info in the CL
 app.use(morgan('tiny'));
+
+app.use((req, res, next) => {
+  debug('my middleware');
+  next();
+})
+
+
+
 // Express will search public for display files
 app.use(express.static(path.join(__dirname, 'public')));
 // Express will check here when referencing /css
@@ -23,8 +46,15 @@ app.set('views', './src/views');
 // Tells Express that we are using ejs for the view engine
 app.set('view engine', 'ejs');
 
+
+// Calls the Nav
+const nav = [
+  { link: '/books', title: 'Book' },
+  { link: '/authors', title: 'Author' }
+];
+
 // Calls bookRouter from other file where info is stored
-const bookRouter = require('./src/routes/bookRoutes');
+const bookRouter = require('./src/routes/bookRoutes')(nav);
 
 // Any time /books is called it will use bookRouter
 app.use('/books', bookRouter);
